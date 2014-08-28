@@ -10,7 +10,7 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/cupcake/rdb/crc64"
+	"github.com/cespare/rdb/crc64"
 )
 
 // A Decoder must be implemented to parse a RDB file.

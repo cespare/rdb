@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cupcake/rdb"
+	"github.com/cespare/rdb"
 	. "launchpad.net/gocheck"
 )
 
