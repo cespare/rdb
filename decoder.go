@@ -20,8 +20,10 @@ type Decoder interface {
 	// StartDatabase is called when database n starts.
 	// Once a database starts, another database will not start until EndDatabase is called.
 	StartDatabase(n int)
-	// Set is called once for each string key.
+	// Set is called once for each string-valued key.
 	Set(key, value []byte, expiry int64)
+	// SetInt is called once for each int-valued key.
+	SetInt(key []byte, value int32, expiry int64)
 	// StartHash is called at the beginning of a hash.
 	// Hset will be called exactly length times before EndHash.
 	StartHash(key []byte, length, expiry int64)
@@ -197,11 +199,15 @@ func (d *decode) decode() error {
 func (d *decode) readObject(key []byte, typ ValueType, expiry int64) error {
 	switch typ {
 	case TypeString:
-		value, err := d.readString()
+		value, isInt, err := d.readStringOrInt()
 		if err != nil {
 			return err
 		}
-		d.event.Set(key, value, expiry)
+		if isInt {
+			d.event.SetInt(key, value.(int32), expiry)
+		} else {
+			d.event.Set(key, value.([]byte), expiry)
+		}
 	case TypeList:
 		length, _, err := d.readLength()
 		if err != nil {
@@ -633,6 +639,49 @@ func (d *decode) readString() ([]byte, error) {
 	str := make([]byte, length)
 	_, err = io.ReadFull(d.r, str)
 	return str, err
+}
+
+func (d *decode) readStringOrInt() (val interface{}, isInt bool, err error) {
+	length, encoded, err := d.readLength()
+	if err != nil {
+		return nil, false, err
+	}
+	if encoded {
+		switch length {
+		case rdbEncInt8:
+			i, err := d.readUint8()
+			return int32(i), true, err
+		case rdbEncInt16:
+			i, err := d.readUint16()
+			return int32(i), true, err
+		case rdbEncInt32:
+			i, err := d.readUint32()
+			return int32(i), true, err
+		case rdbEncLZF:
+			clen, _, err := d.readLength()
+			if err != nil {
+				return nil, false, err
+			}
+			ulen, _, err := d.readLength()
+			if err != nil {
+				return nil, false, err
+			}
+			compressed := make([]byte, clen)
+			_, err = io.ReadFull(d.r, compressed)
+			if err != nil {
+				return nil, false, err
+			}
+			decompressed := lzfDecompress(compressed, int(ulen))
+			if len(decompressed) != int(ulen) {
+				return nil, false, fmt.Errorf("decompressed string length %d didn't match expected length %d", len(decompressed), ulen)
+			}
+			return decompressed, false, nil
+		}
+	}
+
+	str := make([]byte, length)
+	_, err = io.ReadFull(d.r, str)
+	return str, false, err
 }
 
 func (d *decode) readUint8() (uint8, error) {
