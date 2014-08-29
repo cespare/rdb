@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 
 	"github.com/cespare/rdb"
-	. "launchpad.net/gocheck"
+	. "gopkg.in/check.v1"
 )
 
 type EncoderSuite struct{}

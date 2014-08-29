@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/cespare/rdb"
-	. "launchpad.net/gocheck"
+	. "gopkg.in/check.v1"
 )
 
 // Hook gocheck into the gotest runner.
