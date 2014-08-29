@@ -167,7 +167,7 @@ func (s *DecoderSuite) TestDumpDecoder(c *C) {
 	if err != nil {
 		c.Error(err)
 	}
-	c.Assert(r.dbs[1]["test"], Equals, int32(10))
+	c.Assert(r.dbs[1]["test"], Equals, "10")
 }
 
 func decodeRDB(name string) *FakeRedis {
@@ -226,11 +226,6 @@ func (r *FakeRedis) StartDatabase(n int) {
 func (r *FakeRedis) Set(key, value []byte, expiry int64) {
 	r.setExpiry(key, expiry)
 	r.db()[string(key)] = string(value)
-}
-
-func (r *FakeRedis) SetInt(key []byte, value int32, expiry int64) {
-	r.setExpiry(key, expiry)
-	r.db()[string(key)] = value
 }
 
 func (r *FakeRedis) StartHash(key []byte, length, expiry int64) {
